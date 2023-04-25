@@ -72,12 +72,22 @@ app.get('/report', (req, res) => {
   });
 });
 
-app.get('/reports', (req, res) => {
+app.post('/reports', (req, res) => {
+  
+  const date1 = new Date(req.body.fromDate);
+  const date2 = new Date(req.body.toDate);
+  
+  console.log('Date 1:', date1);
+  console.log('Date 2:', date2);
+
   const url = 'http://localhost:8080/pentaho/api/repos/%3Apublic%3AMango%3ABillingWorksheet4.prpt/report';
+
+  
+
   const params = {
-    "CompanyID": "954",
-    "FromDate": "2000-03-19",
-    "ToDate": "2023-04-19"
+    "CompanyID": "1",
+    "FromDate": date1,
+    "ToDate": date2,
 
   };
 
