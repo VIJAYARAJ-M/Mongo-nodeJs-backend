@@ -49,6 +49,7 @@ app.get('/report', (req, res) => {
   const url = 'http://localhost:8080/pentaho/api/repos/%3Apublic%3AMango%3AActivity%20Codes_demo.prpt/report';
   const params = {
     "CompanyID": "1"
+
   };
 
   request.get({
@@ -73,16 +74,16 @@ app.get('/report', (req, res) => {
 });
 
 app.post('/reports', (req, res) => {
-  
+
   const date1 = new Date(req.body.fromDate);
   const date2 = new Date(req.body.toDate);
-  
+
   console.log('Date 1:', date1);
   console.log('Date 2:', date2);
 
   const url = 'http://localhost:8080/pentaho/api/repos/%3Apublic%3AMango%3ABillingWorksheet4.prpt/report';
 
-  
+
 
   const params = {
     "CompanyID": "1",
@@ -129,7 +130,7 @@ app.post('/reports', (req, res) => {
       // console.log("Row", rows);
       console.log("TOF", pageCount <= 1, pageCount);
 
-      if (pageCount <= 1) {
+      if (pageCount <= 6) {
         console.log("If is running");
         res.set('Content-Type', 'application/pdf');
         res.send(body);
@@ -149,7 +150,7 @@ app.post('/reports', (req, res) => {
 
         const mailOptions = {
           from: 'vijayarajm.2016@gmail.com',
-          to: '7401546493@gmail.com',
+          to: 'joe.marwin@prowesstics.com',
           subject: 'Pentaho Report PDF',
           attachments: [
             {
@@ -180,6 +181,141 @@ app.post('/reports', (req, res) => {
 
   });
 });
+
+app.post('/report1', (req, res) => {
+
+  const date1 = new Date(req.body.fromDate);
+  const date2 = new Date(req.body.toDate);
+
+  console.log('Date 1:', date1);
+  console.log('Date 2:', date2);
+
+  client.query('SELECT COUNT(*) FROM billingworksheet WHERE "Ddate" BETWEEN $1 AND $2', [date1, date2], (err, result) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log(`The row count between ${date1} and ${date2} is ${result.rows[0].count}`);
+      const RowCount = result.rows[0].count
+      console.log("RowCount", RowCount);
+
+      const url = 'http://localhost:8080/pentaho/api/repos/%3Apublic%3AMango%3ABillingWorksheet4.prpt/report';
+
+
+
+      const params = {
+        "CompanyID": "954",
+        "FromDate": date1,
+        "ToDate": date2,
+
+      };
+
+      if (RowCount < 1000) {
+
+
+        request.get({
+          url: url,
+          qs: params,
+          encoding: null,
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from('admin:password').toString('base64'),
+            'Content-Type': 'application/pdf'
+          },
+        }, (error, response, body) => {
+          if (error) {
+            console.error(error);
+            res.status(500).send('Error getting report');
+          }
+          else {
+
+            console.log("Data", response.headers);
+            console.log("Body", body);
+
+
+            res.set('Content-Type', 'application/pdf');
+
+            res.send(body);
+
+            console.log("body");
+
+
+
+          }
+
+
+        });
+
+      }
+      else {
+        res.status(200).send({ message: 'Report generation is in progress. Please wait for an email with the generated report.' });
+
+        console.log("else is running");
+        request.get({
+          url: url,
+          qs: params,
+          encoding: null,
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from('admin:password').toString('base64'),
+            'Content-Type': 'application/pdf'
+          },
+        }, (error, response, body) => {
+          if (error) {
+            console.error(error);
+            res.status(500).send('Error getting report');
+          }
+          else {
+
+            const transporter = nodemailer.createTransport({
+              host: 'smtp.gmail.com', // replace with SMTP server hostname
+              port: 587, // replace with SMTP server port
+              secure: false, // true for 465, false for other ports
+              auth: {
+                user: 'vijayarajm.2016@gmail.com', // replace with your email
+                pass: 'cffdkousqyzdadkl' // replace with your password
+              }
+            });
+
+            const mailOptions = {
+              from: 'vijayarajm.2016@gmail.com',
+              to: 'fleming.moral@prowesstrics.com',
+              subject: 'Pentaho Report PDF',
+              attachments: [
+                {
+                  filename: 'report.pdf',
+                  content: body,
+                  contentType: 'application/pdf'
+                }
+              ]
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+              if (error) {
+                console.log(error);
+                //res.status(400).send({ error: 'Email send error'});
+              } else {
+                console.log('Email sent: ' + info.response);
+                console.log("Email send successfully");
+                // res.send({ message: 'Email send successfully' });
+
+                res.status(200).json({ message: 'Email send successfully' });
+              }
+            });
+
+
+
+          }
+
+
+        });
+
+      }
+    }
+
+    // disconnect from the database
+    client.end();
+
+  });
+})
+
 
 
 
