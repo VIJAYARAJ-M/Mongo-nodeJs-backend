@@ -203,7 +203,7 @@ app.post('/report1', (req, res) => {
 
 
       const params = {
-        "CompanyID": "954",
+        "CompanyID": "1",
         "FromDate": date1,
         "ToDate": date2,
 
@@ -249,6 +249,130 @@ app.post('/report1', (req, res) => {
         res.status(200).send({ message: 'Report generation is in progress. Please wait for an email with the generated report.' });
 
         console.log("else is running");
+        app.post("/submit", (req, res) => {
+
+          const Message = req.body.choice;
+
+          console.log("Message", Message);
+          if (Message === "yes") {
+            // Execute code for "yes" choice
+            console.log("User selected Yes");
+
+            request.get({
+              url: url,
+              qs: params,
+              encoding: null,
+              headers: {
+                'Authorization': 'Basic ' + Buffer.from('admin:password').toString('base64'),
+                'Content-Type': 'application/pdf'
+              },
+            }, (error, response, body) => {
+              if (error) {
+                console.error(error);
+                res.status(500).send('Error getting report');
+              }
+              else {
+
+                const transporter = nodemailer.createTransport({
+                  host: 'smtp.gmail.com', // replace with SMTP server hostname
+                  port: 587, // replace with SMTP server port
+                  secure: false, // true for 465, false for other ports
+                  auth: {
+                    user: 'vijayarajm.2016@gmail.com', // replace with your email
+                    pass: 'cffdkousqyzdadkl' // replace with your password
+                  }
+                });
+
+                const mailOptions = {
+                  from: 'vijayarajm.2016@gmail.com',
+                  to: 'vijayaraj.m@prowesstics.com',
+                  subject: 'Pentaho Report PDF',
+                  attachments: [
+                    {
+                      filename: 'report.pdf',
+                      content: body,
+                      contentType: 'application/pdf'
+                    }
+                  ]
+                };
+
+                transporter.sendMail(mailOptions, (error, info) => {
+                  if (error) {
+                    console.log(error);
+                    //res.status(400).send({ error: 'Email send error'});
+                  } else {
+                    console.log('Email sent: ' + info.response);
+                    console.log("Email send successfully");
+                    // res.send({ message: 'Email send successfully' });
+
+                    res.status(200).json({ message: 'Email send successfully' });
+                  }
+                });
+
+
+
+                //   }
+
+
+                // });
+
+
+              }
+            })
+          } else {
+            // Execute code for "no" choice
+            console.log("User selected No");
+          }
+
+        })
+
+
+      }
+
+    }
+
+    // disconnect from the database
+    //client.end();
+
+  });
+})
+
+
+
+
+
+app.post('/report2', (req, res) => {
+
+  const date1 = new Date(req.body.fromDate);
+  const date2 = new Date(req.body.toDate);
+
+  console.log('Date 1:', date1);
+  console.log('Date 2:', date2);
+
+  const delay = 2 * 60 * 1000;
+
+  client.query('SELECT COUNT(*) FROM billingworksheet WHERE "Ddate" BETWEEN $1 AND $2', [date1, date2], (err, result) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log(`The row count between ${date1} and ${date2} is ${result.rows[0].count}`);
+      const RowCount = result.rows[0].count
+      console.log("RowCount", RowCount);
+
+      const url = 'http://localhost:8080/pentaho/api/repos/%3Apublic%3AMango%3ABillingWorksheet4.prpt/report';
+
+
+
+      const params = {
+        "CompanyID": "1",
+        "FromDate": date1,
+        "ToDate": date2,
+
+      };
+
+      if (RowCount < 1000) {
+
+
         request.get({
           url: url,
           qs: params,
@@ -264,41 +388,15 @@ app.post('/report1', (req, res) => {
           }
           else {
 
-            const transporter = nodemailer.createTransport({
-              host: 'smtp.gmail.com', // replace with SMTP server hostname
-              port: 587, // replace with SMTP server port
-              secure: false, // true for 465, false for other ports
-              auth: {
-                user: 'vijayarajm.2016@gmail.com', // replace with your email
-                pass: 'cffdkousqyzdadkl' // replace with your password
-              }
-            });
+            console.log("Data", response.headers);
+            console.log("Body", body);
 
-            const mailOptions = {
-              from: 'vijayarajm.2016@gmail.com',
-              to: 'fleming.moral@prowesstrics.com',
-              subject: 'Pentaho Report PDF',
-              attachments: [
-                {
-                  filename: 'report.pdf',
-                  content: body,
-                  contentType: 'application/pdf'
-                }
-              ]
-            };
 
-            transporter.sendMail(mailOptions, (error, info) => {
-              if (error) {
-                console.log(error);
-                //res.status(400).send({ error: 'Email send error'});
-              } else {
-                console.log('Email sent: ' + info.response);
-                console.log("Email send successfully");
-                // res.send({ message: 'Email send successfully' });
+            res.set('Content-Type', 'application/pdf');
 
-                res.status(200).json({ message: 'Email send successfully' });
-              }
-            });
+            res.send(body);
+
+            console.log("body");
 
 
 
@@ -308,13 +406,104 @@ app.post('/report1', (req, res) => {
         });
 
       }
+      else {
+        res.status(200).send({ message: 'Report generation is in progress. Please wait for an email with the generated report.' });
+
+        console.log("else is running");
+        setTimeout(() => {
+          app.post("/submits", (req, res) => {
+
+            const Message = req.body.choice;
+
+            console.log("Message", Message);
+            if (Message === "yes") {
+              // Execute code for "yes" choice
+              console.log("User selected Yes");
+
+              request.get({
+                url: url,
+                qs: params,
+                encoding: null,
+                headers: {
+                  'Authorization': 'Basic ' + Buffer.from('admin:password').toString('base64'),
+                  'Content-Type': 'application/pdf'
+                },
+              }, (error, response, body) => {
+                if (error) {
+                  console.error(error);
+                  res.status(500).send('Error getting report');
+                }
+                else {
+
+                  const transporter = nodemailer.createTransport({
+                    host: 'smtp.gmail.com', // replace with SMTP server hostname
+                    port: 587, // replace with SMTP server port
+                    secure: false, // true for 465, false for other ports
+                    auth: {
+                      user: 'vijayarajm.2016@gmail.com', // replace with your email
+                      pass: 'cffdkousqyzdadkl' // replace with your password
+                    }
+                  });
+
+                  const mailOptions = {
+                    from: 'vijayarajm.2016@gmail.com',
+                    to: 'innacentinba42@gmail.com',
+                    subject: 'Pentaho Report PDF',
+                    attachments: [
+                      {
+                        filename: 'report.pdf',
+                        content: body,
+                        contentType: 'application/pdf'
+                      }
+                    ]
+                  };
+
+                  transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                      console.log(error);
+                      //res.status(400).send({ error: 'Email send error'});
+                    } else {
+                      console.log('Email sent: ' + info.response);
+                      console.log("Email send successfully");
+                      // res.send({ message: 'Email send successfully' });
+
+                      res.status(200).json({ message: 'Email send successfully' });
+                    }
+                  });
+
+
+
+                  //   }
+
+
+                  // });
+
+
+                }
+              })
+            } else {
+              // Execute code for "no" choice
+              console.log("User selected No");
+            }
+
+          })
+
+        },delay)
+
+
+
+
+      }
+
     }
 
     // disconnect from the database
-    client.end();
+    //client.end();
 
   });
 })
+
+
 
 
 
